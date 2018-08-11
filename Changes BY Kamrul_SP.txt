@@ -1,0 +1,141 @@
+Work List :
+1. Branch Update(With SP).
+2. Counter Update.
+3. Service Type Update and Delete.
+4. Service Sub Type Update and Delete.
+5. BreakType Update and Delete.
+6. Customer Type Update and Delete.
+7. Change All SP Name for Edit.(Select List BY ID)
+8. Check all User Functions(User Create, Login, Token Create, Display Next Token).
+9. Error in Daily Break List | Token | DailyService List.
+10. Miss Sp (USP_ServiceDetail_SelectCDate || USP_AspNetUser_SelectAll || USP_DailyBreak_SelectAll ||)
+ 
+==============================================================================================
+
+
+
+
+CREATE OR REPLACE PROCEDURE SCOTT.USP_Branch_Update
+ 
+(p_branch_id number,p_branch_name varchar2,p_address varchar2, p_contact_no varchar2,
+p_contact_person varchar2,p_display_next number, p_static_ip varchar2 default ' '
+)
+
+IS
+Begin
+Update  tblbranch
+           set branch_name= p_branch_name,
+           address= p_address,
+           
+           contact_no=p_contact_no,
+           contact_person=p_contact_person,
+           display_next=p_display_next,
+           static_ip=p_static_ip
+     where branch_id=p_branch_id;
+            
+    
+End;
+/
+
+----------------------------------------
+CREATE OR REPLACE PROCEDURE    USP_Branch_SelectList_ById (
+   p_branch_id       NUMBER,
+   po_cursor     OUT SYS_REFCURSOR
+   )
+IS
+BEGIN
+   --open po_cursor for select * from tblservicetype;
+   OPEN po_cursor FOR
+      SELECT *
+        FROM tblbranch
+       WHERE branch_id = p_branch_id;
+END;
+/
+
+CREATE OR REPLACE PROCEDURE    USP_Counters_SelectList_ById(
+   p_Counter_id       NUMBER,
+   po_cursor      OUT SYS_REFCURSOR
+   )
+IS
+BEGIN
+   --open po_cursor for select * from tblservicetype;
+   OPEN po_cursor FOR
+      SELECT *
+        FROM tblcounter
+       WHERE counter_id = p_Counter_id;
+END;
+/
+
+CREATE OR REPLACE PROCEDURE    USP_ServiceType_List_ById(
+   p_service_type_id       NUMBER,
+   po_cursor           OUT SYS_REFCURSOR
+   )
+IS
+BEGIN
+   --open po_cursor for select * from tblservicetype;
+   OPEN po_cursor FOR
+      SELECT *
+        FROM tblServiceType
+       WHERE service_type_id = p_service_type_id;
+END;
+/
+
+CREATE OR REPLACE PROCEDURE    USP_ServiceSubType_List_ById(
+   p_servicesub_type_id       NUMBER,
+   po_cursor              OUT SYS_REFCURSOR
+   )
+IS
+BEGIN
+   --open po_cursor for select * from tblservicetype;
+   OPEN po_cursor FOR
+      SELECT *
+        FROM tblservicesubtype
+       WHERE service_sub_type_id = p_servicesub_type_id;
+END;
+/
+
+CREATE OR REPLACE PROCEDURE    USP_BreakType_SelectList_ById(
+   p_breakType_id       NUMBER,
+   po_cursor        OUT SYS_REFCURSOR
+   )
+IS
+BEGIN
+   OPEN po_cursor FOR
+      SELECT *
+        FROM tblBreakType
+       WHERE break_type_id = p_breakType_id;
+END;
+/
+
+CREATE OR REPLACE PROCEDURE    USP_CustomerType_List_ById(
+   p_Customer_type_id       NUMBER,
+   po_cursor           OUT SYS_REFCURSOR)
+IS
+BEGIN
+   --open po_cursor for select * from tblCustomertype;
+   OPEN po_cursor FOR
+      SELECT *
+        FROM tblCustomerType
+       WHERE Customer_type_id = p_Customer_type_id;
+END;
+/
+
+CREATE OR REPLACE PROCEDURE SCOTT.USP_Customer_List_ById (
+   p_Customer_id       NUMBER,
+   po_cursor           OUT SYS_REFCURSOR)
+IS
+BEGIN
+   --open po_cursor for select * from tblCustomertype;
+   OPEN po_cursor FOR
+      SELECT *
+        FROM tblCustomer
+       WHERE Customer_id = p_Customer_id;
+END;
+/
+Priority(Class, DAL, BLL,Index,Edit,Create)--- Customer type  ||| USP_ServiceDetail_SelectCDate || USP_AspNetUser_SelectAll || USP_DailyBreak_SelectAll || 
+
+
+
+
+
+/
