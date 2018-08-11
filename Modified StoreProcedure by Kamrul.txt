@@ -1,0 +1,128 @@
+CREATE OR REPLACE PROCEDURE SCOTT.USP_SERVICEDETAIL_TRANSFER (
+   P_BRANCH_ID        IN     NUMBER,
+   P_COUNTER_NO       IN     VARCHAR2,
+   P_TOKEN_ID         IN     NUMBER)
+IS
+   P_ROWCOUNT_COUNTER      NUMBER := 0;
+   P_ROWCOUNT_TOKEN      NUMBER := 0;
+   P_COUNTER_ID          NUMBER:=0;
+
+/******************************************************************************
+   NAME:       USP_DAILYSERVICE_NEWCALL
+   PURPOSE:    CALLING NEW CUSTOMER FOR SERVICE WITH NEW TOKEN
+
+   REVISIONS:
+   Ver        Date        Author           Description
+   ---------  ----------  ---------------  ------------------------------------
+   1.0        7/28/2018   KAMRUL       1. Created this procedure.
+******************************************************************************/
+
+
+
+BEGIN
+
+    SELECT COUNT (1)
+     INTO P_ROWCOUNT_COUNTER
+     FROM TBLCOUNTER C
+    WHERE     C.COUNTER_NO = P_COUNTER_NO
+    AND C.BRANCH_ID=P_BRANCH_ID;
+    
+    IF(P_ROWCOUNT_COUNTER=0)
+    THEN
+        raise_application_error( -20001, 'Counter not found' );
+    ELSE
+        SELECT COUNTER_ID
+         INTO P_COUNTER_ID
+         FROM TBLCOUNTER C
+        WHERE     C.COUNTER_NO = P_COUNTER_NO
+        AND C.BRANCH_ID=P_BRANCH_ID;
+    END IF;
+    
+   SELECT COUNT (1)
+     INTO P_ROWCOUNT_TOKEN
+     FROM TBLTOKENQUEUE T
+    WHERE     T.TOKEN_ID = P_TOKEN_ID
+          AND T.BRANCH_ID = P_BRANCH_ID
+          AND (T.SERVICE_STATUS_ID = 2)
+          AND TRUNC (T.service_date) = TRUNC (SYSDATE);
+
+   DBMS_OUTPUT.PUT_LINE ('P_ROWCOUNT_TOKEN:' || P_ROWCOUNT_TOKEN);
+
+  
+
+   IF (P_ROWCOUNT_TOKEN > 0)
+   THEN
+      UPDATE TBLTOKENQUEUE
+         SET 
+             counter_id = P_COUNTER_ID,
+             user_id=null
+       WHERE token_id = P_TOKEN_ID
+       AND BRANCH_ID = P_BRANCH_ID
+          AND (SERVICE_STATUS_ID = 2)
+          AND TRUNC (service_date) = TRUNC (SYSDATE);
+   END IF;
+
+END;
+/
+
+
+===============================================
+CREATE OR REPLACE PROCEDURE SCOTT.USP_DailyBreak_SelectAll (
+   P_BRANCH_ID       NUMBER,
+   P_USER_ID         VARCHAR2,
+   po_cursor     OUT SYS_REFCURSOR)
+IS
+BEGIN
+   OPEN po_cursor FOR
+      SELECT B.DAILY_BREAK_ID,
+             BR.BRANCH_NAME,
+             C.COUNTER_NO,
+             U.HOMETOWN,
+             T.BREAK_TYPE_NAME,
+             B.START_TIME,
+             B.END_TIME,
+             B.REMARKS
+        FROM TBLDAILYBREAK B
+             INNER JOIN TBLBREAKTYPE T ON B.BREAK_TYPE_ID = T.BREAK_TYPE_ID
+             INNER JOIN ASPNETUSERS U ON B.USER_ID = U.ID
+             INNER JOIN TBLCOUNTER C ON B.COUNTER_ID = C.COUNTER_ID
+             INNER JOIN TBLBRANCH BR ON C.BRANCH_ID = BR.BRANCH_ID
+       WHERE        (P_BRANCH_ID IS NULL OR BR.BRANCH_ID = P_BRANCH_ID)
+                AND (P_USER_ID IS NULL OR U.ID = P_USER_ID)
+                AND TRUNC(B.START_TIME)=TRUNC(SYSDATE);
+END;
+/
+
+=============================================
+CREATE OR REPLACE PROCEDURE SCOTT.USP_GetInProgressTokenList (
+   -- Add the parameters for the stored procedure here
+   p_branch_id       NUMBER,
+   PO_CURSOR     OUT SYS_REFCURSOR)
+AS
+BEGIN
+   -- SET NOCOUNT ON added to prevent extra result sets from
+   -- interfering with SELECT statements.
+
+   -- Insert statements for procedure here
+   OPEN PO_CURSOR FOR
+        SELECT b.static_ip,
+           c.counter_no,
+           NVL (TO_CHAR (t.token_no), 'ON') token_no
+        FROM tblCounter c
+           INNER JOIN tblBranch b ON c.branch_id = b.branch_id
+           LEFT JOIN
+           (SELECT T.COUNTER_ID, T.TOKEN_NO
+            FROM tblTokenQueue T
+            INNER JOIN 
+            (
+                SELECT counter_id, min(token_id) token_id
+                  FROM tblTokenQueue
+                WHERE service_status_id = 2 AND branch_id=p_branch_id
+                    AND TRUNC (service_date) = TRUNC (SYSDATE)
+                GROUP BY counter_id
+            ) Q ON T.COUNTER_ID=Q.COUNTER_ID AND T.TOKEN_ID=Q.TOKEN_ID) t
+              ON c.counter_id = t.counter_id
+        WHERE b.branch_id = p_branch_id
+        ORDER BY C.COUNTER_NO;
+END;
+/
